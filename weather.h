@@ -23,6 +23,8 @@ class weather : public QMainWindow
         STATE_US,
         STATE_POLLEN,
         STATE_7_DAY,
+        STATE_CURRENT_TEMPS,
+        STATE_DISABLED,         // Must be next to last
         STATE_LAST
     } HTTP_STATE;
 
@@ -42,7 +44,7 @@ class weather : public QMainWindow
 #define MAX_ANIMATE 6
     QString _current_path;
     void update_images();
-    void set_pixmap(QLabel *label, QImage const &image);
+    void set_pixmap(QLabel *label, int index, QImage const &image);
     QHttp::ConnectionMode _mode;
     HTTP_STATE _state;
     int _state_index;

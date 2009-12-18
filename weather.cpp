@@ -16,6 +16,8 @@ char const * g_combo_selection[] =
     "US",               // STATE_US,
     "Pollen",           // STATE_POLLEN,
     "7 Day Forecast",   // STATE_7_DAY,
+    "Current Temps",    // STATE_CURRENT_TEMPS,
+    "Disabled",         // STATE_DISABLED,
 };
 
 weather::weather(): QMainWindow(), _http(this), _timer_reload(this), _timer_animate(this)
@@ -35,11 +37,13 @@ weather::weather(): QMainWindow(), _http(this), _timer_reload(this), _timer_anim
         _mw.comboBox_right->addItem(g_combo_selection[i]);
         _mw.comboBox_bottom_left->addItem(g_combo_selection[i]);
         _mw.comboBox_bottom_right->addItem(g_combo_selection[i]);
+        _mw.comboBox_bottom_middle->addItem(g_combo_selection[i]);
     }
     _mw.comboBox_left->setCurrentIndex(STATE_LOCAL);
     _mw.comboBox_right->setCurrentIndex(STATE_TEXAS);
     _mw.comboBox_bottom_left->setCurrentIndex(STATE_POLLEN);
     _mw.comboBox_bottom_right->setCurrentIndex(STATE_7_DAY);
+    _mw.comboBox_bottom_middle->setCurrentIndex(STATE_CURRENT_TEMPS);
 
     _hostnames[STATE_LOCAL] = "weather.myfoxdfw.com";
     _paths[STATE_LOCAL] = "/maps/KDFW/metro/radar/d640x480/xm0.jpeg";
@@ -64,6 +68,10 @@ weather::weather(): QMainWindow(), _http(this), _timer_reload(this), _timer_anim
     _hostnames[STATE_7_DAY] = "media2.myfoxdfw.com";
     _paths[STATE_7_DAY] = "/weather/web_7_day.jpg";
     _animate[STATE_7_DAY] = false;
+ 
+    _hostnames[STATE_CURRENT_TEMPS] = "media2.myfoxdfw.com";
+    _paths[STATE_CURRENT_TEMPS] = "/weather/web_adi_temps.jpg";
+    _animate[STATE_CURRENT_TEMPS] = false;
  
     connect(&_http, SIGNAL(done(bool)), this, SLOT(download_complete(bool)));
     connect(&_timer_reload, SIGNAL(timeout()), this, SLOT(timer_start_download()));
@@ -93,10 +101,16 @@ void weather::sslErrors ( const QList<QSslError> & errors )
 void weather::timer_animate()
 {
     //qDebug() << "animate " << _animate_index;
-    set_pixmap(_mw.image_left, _images[_mw.comboBox_left->currentIndex()][_animate_index]);
-    set_pixmap(_mw.image_right, _images[_mw.comboBox_right->currentIndex()][_animate_index]);
-    set_pixmap(_mw.image_bottom_left, _images[_mw.comboBox_bottom_left->currentIndex()][_animate_index]);
-    set_pixmap(_mw.image_bottom_right, _images[_mw.comboBox_bottom_right->currentIndex()][_animate_index]);
+    set_pixmap(_mw.image_left, _mw.comboBox_left->currentIndex(), 
+            _images[_mw.comboBox_left->currentIndex()][_animate_index]);
+    set_pixmap(_mw.image_right, _mw.comboBox_right->currentIndex(), 
+            _images[_mw.comboBox_right->currentIndex()][_animate_index]);
+    set_pixmap(_mw.image_bottom_left, _mw.comboBox_bottom_left->currentIndex(), 
+            _images[_mw.comboBox_bottom_left->currentIndex()][_animate_index]);
+    set_pixmap(_mw.image_bottom_right, _mw.comboBox_bottom_right->currentIndex(), 
+            _images[_mw.comboBox_bottom_right->currentIndex()][_animate_index]);
+    set_pixmap(_mw.image_bottom_middle, _mw.comboBox_bottom_middle->currentIndex(), 
+            _images[_mw.comboBox_bottom_middle->currentIndex()][_animate_index]);
 
     if (_animate_index == 0)
     {
@@ -128,8 +142,16 @@ void weather::resizeEvent(QResizeEvent * event)
     update_images();
 }
 
-void weather::set_pixmap(QLabel *label, QImage const &image)
+void weather::set_pixmap(QLabel *label, int index, QImage const &image)
 {
+    if (index == STATE_DISABLED)
+    {
+        label->setVisible(false);
+    } else
+    {
+        label->setVisible(true);
+    }
+
     if (image.height() > 0)
     {
         label->setPixmap(QPixmap::fromImage(
@@ -192,7 +214,8 @@ void weather::download_complete(bool error)
         _current_path = _paths[_state];
     }
 
-    if (STATE_LAST != _state)
+    if ((STATE_DISABLED != _state) && 
+            (STATE_LAST != _state))
     {
         _http.setHost(_hostnames[_state], _mode);
         _http.get(_current_path);
