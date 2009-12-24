@@ -35,6 +35,7 @@ class weather : public QMainWindow
     void timer_start_download();
     void timer_animate();
     void about();
+    void refresh();
     void download_complete(bool error);
     void sslErrors ( const QList<QSslError> & errors );
 

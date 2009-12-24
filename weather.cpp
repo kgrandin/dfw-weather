@@ -76,6 +76,7 @@ weather::weather(): QMainWindow(), _http(this), _timer_reload(this), _timer_anim
     connect(&_http, SIGNAL(done(bool)), this, SLOT(download_complete(bool)));
     connect(&_timer_reload, SIGNAL(timeout()), this, SLOT(timer_start_download()));
     connect(_mw.actionAbout, SIGNAL(activated()), this, SLOT(about()));
+    connect(_mw.actionRefresh, SIGNAL(activated()), this, SLOT(refresh()));
     connect(&_timer_animate, SIGNAL(timeout()), this, SLOT(timer_animate()));
     connect(&_http, SIGNAL(sslErrors ( const QList<QSslError> & )), 
             this, SLOT(sslErrors ( const QList<QSslError> & )));
@@ -90,6 +91,11 @@ weather::weather(): QMainWindow(), _http(this), _timer_reload(this), _timer_anim
 
 weather::~weather()
 {
+}
+
+void weather::refresh()
+{
+    timer_start_download();
 }
 
 void weather::sslErrors ( const QList<QSslError> & errors )
@@ -130,6 +136,8 @@ void weather::timer_start_download()
 {
     _state = STATE_LOCAL;
     _state_index = 0;
+
+    _mw.statusbar->showMessage(QString("Loading: ") + g_combo_selection[_state]);
 
     _http.setHost(_hostnames[_state], _mode);
     _current_path = _paths[_state];
@@ -173,7 +181,6 @@ void weather::download_complete(bool error)
     {
         qDebug() << "Error:" << _http.errorString();
     }
-
 
     //qDebug() << "Load: " << _current_path << ":" << _state << ":" << _state_index << ":" << data.length();
     image.loadFromData(data);
@@ -219,8 +226,14 @@ void weather::download_complete(bool error)
     {
         _http.setHost(_hostnames[_state], _mode);
         _http.get(_current_path);
+        _mw.statusbar->showMessage(QString("Loading: ") + g_combo_selection[_state]);
     } else
     {
+        QTime current_time = QTime::currentTime();
+        QDate current_date = QDate::currentDate();
+
+        _mw.statusbar->showMessage(QString("Load complete: ") + current_time.toString("hh:mm ap") + 
+            " (" + current_date.toString("dddd MMMM d") + ")");
         _state = STATE_LOCAL;
         _state_index = 0;
     }
