@@ -134,6 +134,8 @@ void weather::timer_animate()
 
 void weather::timer_start_download()
 {
+    _http.abort();
+
     _state = STATE_LOCAL;
     _state_index = 0;
 
